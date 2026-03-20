@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>NovaPlay Planner</title>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="NovaPlay"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#1D9E75"/>
+<meta name="description" content="NovaPlay Sprint Planner 21/3–30/4/2026"/>
+<link rel="manifest" id="manifestLink"/>
+<style>
+@media(max-width:600px){
+  body{padding:0.75rem !important}
+  .stats-row{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+  .ev-progress-row{grid-template-columns:repeat(3,minmax(0,1fr)) !important}
+  .cal-cell{min-height:48px !important;padding:3px !important}
+  .dpill{display:none}
+  .cal-cell.today .day-num,.cal-cell.selected .day-num{font-size:12px}
+  .detail{padding:1rem !important}
+  .add-row{flex-wrap:wrap}
+  .add-in{min-width:0;width:100%}
+  .tsel,.abtn{font-size:12px}
+  .ev-card{padding:8px 10px !important}
+  .ev-15-step{font-size:11px}
+  .topbar{flex-wrap:wrap;gap:6px}
+  .phase-legend{display:none}
+  .brand-name{font-size:15px !important}
+}
+</style>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-primary:#ffffff;--bg-secondary:#f5f5f4;--bg-tertiary:#fafaf9;
+  --text-primary:#1c1917;--text-secondary:#57534e;--text-tertiary:#a8a29e;
+  --border-light:rgba(0,0,0,0.10);--border-mid:rgba(0,0,0,0.18);
+  --radius-md:8px;--radius-lg:12px;
+  --teal:#1D9E75;--teal-light:#E1F5EE;--teal-dark:#0F6E56;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg-primary:#1c1917;--bg-secondary:#292524;--bg-tertiary:#231f1e;
+    --text-primary:#fafaf9;--text-secondary:#a8a29e;--text-tertiary:#78716c;
+    --border-light:rgba(255,255,255,0.10);--border-mid:rgba(255,255,255,0.18);
+    --teal-light:#0a3d2b;--teal-dark:#5DCAA5;
+  }
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg-tertiary);color:var(--text-primary);min-height:100vh;padding:1.5rem}
+.app{max-width:860px;margin:0 auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.brand{display:flex;align-items:center;gap:8px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--teal)}
+.brand-name{font-size:17px;font-weight:500}
+.deadline-badge{font-size:12px;padding:4px 10px;border-radius:var(--radius-md);background:#E1F5EE;color:#0F6E56;font-weight:500}
+.deadline-badge.warn{background:#FCEBEB;color:#A32D2D}
+.stats-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.25rem}
+.stat{background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px 14px}
+.stat-label{font-size:11px;color:var(--text-tertiary);margin-bottom:3px}
+.stat-val{font-size:20px;font-weight:500}
+.stat-val.g{color:var(--teal)}
+.overall-bar{margin-bottom:1.25rem}
+.ob-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.ob-label{font-size:12px;color:var(--text-secondary)}
+.ob-pct{font-size:13px;font-weight:500}
+.ob-bg{height:8px;background:var(--border-light);border-radius:999px;overflow:hidden}
+.ob-fill{height:100%;background:var(--teal);border-radius:999px;transition:width 0.4s}
+.phase-legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:1.25rem}
+.pl-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-secondary)}
+.pl-dot{width:8px;height:8px;border-radius:50%}
+.view-toggle{display:flex;gap:6px;margin-bottom:1rem}
+.vbtn{font-size:12px;padding:5px 12px;border:1px solid var(--border-mid);border-radius:var(--radius-md);background:transparent;color:var(--text-secondary);cursor:pointer}
+.vbtn.active{background:var(--bg-secondary);color:var(--text-primary);font-weight:500}
+.month-nav{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
+.nav-btn{width:28px;height:28px;border:1px solid var(--border-mid);border-radius:var(--radius-md);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.nav-btn:hover{background:var(--bg-secondary)}
+.month-title{font-size:15px;font-weight:500}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;margin-bottom:1.5rem}
+.dow{font-size:11px;color:var(--text-tertiary);text-align:center;padding:3px 0;font-weight:500}
+.cal-cell{border:1px solid var(--border-light);border-radius:var(--radius-md);padding:5px;min-height:60px;cursor:pointer;background:var(--bg-primary)}
+.cal-cell:hover{border-color:var(--border-mid)}
+.cal-cell.empty{background:transparent;border-color:transparent;cursor:default}
+.cal-cell.out-range{opacity:0.3;cursor:default}
+.cal-cell.today{border-color:var(--teal);border-width:2px}
+.cal-cell.selected{background:var(--teal-light);border-color:var(--teal)}
+.day-num{font-size:11px;font-weight:500;color:var(--text-secondary);margin-bottom:3px;display:flex;align-items:center;gap:3px}
+.day-phase-dot{width:5px;height:5px;border-radius:50%}
+.day-pills{display:flex;flex-direction:column;gap:1px}
+.dpill{font-size:9px;padding:1px 4px;border-radius:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dpill-done{background:#E1F5EE;color:#0F6E56}
+.dpill-todo{background:#f5f5f4;color:#57534e}
+.dpill-rec{background:#E6F1FB;color:#185FA5}
+.detail{background:var(--bg-primary);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.25rem}
+.dh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.dh-date{font-size:15px;font-weight:500}
+.dh-phase{font-size:11px;padding:2px 8px;border-radius:var(--radius-md);font-weight:500}
+.mini-bar-wrap{margin-bottom:1rem}
+.mini-bar-bg{height:4px;background:var(--border-light);border-radius:999px;overflow:hidden}
+.mini-bar-fill{height:100%;background:var(--teal);border-radius:999px;transition:width 0.3s}
+.dbar-row{display:flex;justify-content:space-between;margin-bottom:4px}
+.dbar-lbl{font-size:11px;color:var(--text-tertiary)}
+.rec-box{border-radius:var(--radius-md);padding:10px 12px;margin-bottom:1rem;border-left:3px solid var(--teal);background:var(--bg-secondary)}
+.rec-label{font-size:10px;font-weight:500;color:var(--teal);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px}
+.rec-text{font-size:13px;line-height:1.5}
+.rec-tasks{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.rec-task-item{display:flex;align-items:flex-start;gap:6px;font-size:12px;color:var(--text-secondary)}
+.rec-bullet{width:4px;height:4px;border-radius:50%;background:var(--teal);min-width:4px;margin-top:5px}
+.add-rec-btn{font-size:12px;padding:5px 12px;border:1px solid var(--teal);border-radius:var(--radius-md);background:transparent;color:var(--teal-dark);cursor:pointer;margin-top:8px}
+.add-rec-btn:hover{background:var(--teal-light)}
+.tlist{margin-bottom:12px}
+.trow{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--border-light)}
+.trow:last-child{border-bottom:none}
+.chk{width:18px;height:18px;min-width:18px;border-radius:50%;border:1.5px solid var(--border-mid);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;margin-top:1px}
+.chk.on{background:var(--teal);border-color:var(--teal)}
+.chk svg{display:none;width:9px;height:9px}
+.chk.on svg{display:block}
+.tinfo{flex:1}
+.ttxt{font-size:13px;line-height:1.4}
+.trow.done .ttxt{text-decoration:line-through;color:var(--text-tertiary)}
+.tmeta{display:flex;gap:5px;margin-top:3px}
+.ttag{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:500}
+.ta{background:#EEEDFE;color:#534AB7}
+.tm{background:#E6F1FB;color:#185FA5}
+.ts{background:#FAEEDA;color:#854F0B}
+.ti{background:#EAF3DE;color:#3B6D11}
+.tk{background:#FAECE7;color:#993C1D}
+.tr{background:#f5f5f4;color:#57534e}
+.tdel{width:20px;height:20px;border:none;background:none;color:var(--text-tertiary);cursor:pointer;font-size:18px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
+.tdel:hover{color:var(--text-secondary)}
+.add-row{display:flex;gap:6px}
+.add-in{flex:1;font-size:13px;padding:8px 10px;border:1px solid var(--border-light);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);outline:none}
+.add-in:focus{border-color:var(--border-mid)}
+.tsel{font-size:12px;padding:8px 8px;border:1px solid var(--border-light);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-secondary);outline:none;cursor:pointer}
+.abtn{font-size:12px;padding:8px 14px;border:1px solid var(--border-mid);border-radius:var(--radius-md);background:transparent;color:var(--text-primary);cursor:pointer;white-space:nowrap}
+.abtn:hover{background:var(--bg-secondary)}
+.hist-section{margin-top:1.25rem}
+.hist-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.hist-title{font-size:13px;font-weight:500;color:var(--text-secondary)}
+.hist-clear{font-size:11px;color:var(--text-tertiary);background:none;border:none;cursor:pointer;text-decoration:underline}
+.hist-list{display:flex;flex-direction:column;gap:3px}
+.hi{display:flex;gap:8px;align-items:flex-start;padding:6px 10px;background:var(--bg-secondary);border-radius:var(--radius-md)}
+.hdot{width:6px;height:6px;border-radius:50%;min-width:6px;margin-top:4px}
+.hdot.add{background:var(--teal)}
+.hdot.done{background:#378ADD}
+.hdot.undone{background:#888780}
+.hdot.del{background:#E24B4A}
+.hbody{flex:1}
+.htxt{font-size:12px;line-height:1.4}
+.htime{font-size:11px;color:var(--text-tertiary);margin-top:1px}
+.empty{text-align:center;padding:1.5rem;color:var(--text-tertiary);font-size:13px}
+.list-view-day{margin-bottom:10px;background:var(--bg-primary);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:1rem}
+.lvd-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;cursor:pointer}
+.lvd-date{font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px}
+.lvd-prog{font-size:11px;color:var(--text-tertiary)}
+
+/* === EVENING ROUTINE === */
+.ev-section{margin-top:2rem;border-top:1px solid var(--border-light);padding-top:1.5rem}
+.ev-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.ev-title-row{display:flex;align-items:center;gap:8px}
+.ev-dot{width:9px;height:9px;border-radius:50%;background:#534AB7}
+.ev-title{font-size:16px;font-weight:500}
+.ev-subtitle{font-size:12px;color:var(--text-tertiary);margin-top:1px}
+.ev-streak{font-size:12px;padding:3px 10px;border-radius:var(--radius-md);background:#EEEDFE;color:#534AB7;font-weight:500}
+.ev-timeline{display:flex;flex-direction:column;gap:0;margin-bottom:1.25rem}
+.ev-slot{display:flex;gap:12px;align-items:stretch}
+.ev-time-col{display:flex;flex-direction:column;align-items:center;width:44px;flex-shrink:0}
+.ev-time{font-size:10px;color:var(--text-tertiary);font-weight:500;white-space:nowrap}
+.ev-line{width:1px;background:var(--border-light);flex:1;margin-top:3px}
+.ev-slot:last-child .ev-line{display:none}
+.ev-card{flex:1;background:var(--bg-primary);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s}
+.ev-card:hover{border-color:var(--border-mid)}
+.ev-card.ev-done{opacity:0.6}
+.ev-card.ev-locked{opacity:0.4;cursor:not-allowed}
+.ev-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.ev-card-title{font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px}
+.ev-icon{font-size:14px}
+.ev-badge{font-size:10px;padding:1px 7px;border-radius:999px;font-weight:500}
+.badge-en{background:#E6F1FB;color:#185FA5}
+.badge-book{background:#EAF3DE;color:#3B6D11}
+.badge-gym{background:#FAEEDA;color:#854F0B}
+.badge-code{background:#EEEDFE;color:#534AB7}
+.badge-reward{background:#FBEAF0;color:#993556}
+.badge-buffer{background:#F1EFE8;color:#5F5E5A}
+.ev-desc{font-size:12px;color:var(--text-secondary);line-height:1.4;margin-bottom:6px}
+.ev-micro{font-size:11px;color:var(--text-tertiary);font-style:italic}
+.ev-check{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border-mid);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ev-check.on{background:#1D9E75;border-color:#1D9E75}
+.ev-check svg{display:none;width:9px;height:9px}
+.ev-check.on svg{display:block}
+.ev-reward-unlock{font-size:11px;padding:4px 10px;border-radius:var(--radius-md);background:#FBEAF0;color:#993556;border:1px solid #F4C0D1;margin-top:6px;display:inline-block}
+.ev-reward-unlock.unlocked{background:#E1F5EE;color:#0F6E56;border-color:#9FE1CB}
+.ev-progress-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:1.25rem}
+.ev-prog-card{background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px 12px}
+.ev-prog-label{font-size:11px;color:var(--text-tertiary);margin-bottom:3px}
+.ev-prog-val{font-size:18px;font-weight:500}
+.ev-prog-bar-bg{height:3px;background:var(--border-light);border-radius:999px;overflow:hidden;margin-top:4px}
+.ev-prog-bar-fill{height:100%;border-radius:999px;transition:width 0.4s}
+.ev-tip{border-left:3px solid #BA7517;background:var(--bg-secondary);border-radius:0 var(--radius-md) var(--radius-md) 0;padding:10px 12px;margin-bottom:1rem}
+.ev-tip-label{font-size:10px;font-weight:500;color:#BA7517;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px}
+.ev-tip-text{font-size:12px;color:var(--text-secondary);line-height:1.5}
+.ev-15min{background:var(--bg-secondary);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:1rem}
+.ev-15-title{font-size:12px;font-weight:500;color:var(--text-primary);margin-bottom:8px}
+.ev-15-steps{display:flex;flex-direction:column;gap:5px}
+.ev-15-step{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary)}
+.ev-15-num{width:18px;height:18px;border-radius:50%;background:#534AB7;color:white;font-size:10px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><div class="dot"></div><span class="brand-name">NovaPlay Sprint Planner</span></div>
+    <span class="deadline-badge" id="deadlineBadge">30/4/2026</span>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat"><div class="stat-label">Ngày còn lại</div><div class="stat-val" id="sDaysLeft">-</div></div>
+    <div class="stat"><div class="stat-label">Tổng task</div><div class="stat-val" id="sTotal">-</div></div>
+    <div class="stat"><div class="stat-label">Đã xong</div><div class="stat-val g" id="sDone">-</div></div>
+    <div class="stat"><div class="stat-label">Tiến độ</div><div class="stat-val" id="sRate">-</div></div>
+  </div>
+
+  <div class="overall-bar">
+    <div class="ob-row"><span class="ob-label">Tiến độ tổng dự án (21/3 → 30/4)</span><span class="ob-pct" id="obPct">0%</span></div>
+    <div class="ob-bg"><div class="ob-fill" id="obFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="phase-legend">
+    <div class="pl-item"><div class="pl-dot" style="background:#534AB7"></div>Infra & Setup</div>
+    <div class="pl-item"><div class="pl-dot" style="background:#185FA5"></div>Auth & User</div>
+    <div class="pl-item"><div class="pl-dot" style="background:#1D9E75"></div>Movie & Catalog</div>
+    <div class="pl-item"><div class="pl-dot" style="background:#BA7517"></div>Streaming</div>
+    <div class="pl-item"><div class="pl-dot" style="background:#993C1D"></div>Kafka & Email</div>
+    <div class="pl-item"><div class="pl-dot" style="background:#888780"></div>Testing & Deploy</div>
+  </div>
+
+  <div class="view-toggle">
+    <button class="vbtn active" id="btnCal" onclick="setView('cal')">Lịch</button>
+    <button class="vbtn" id="btnList" onclick="setView('list')">Danh sách</button>
+  </div>
+
+  <div id="calView">
+    <div class="month-nav">
+      <button class="nav-btn" onclick="changeMonth(-1)">&#8249;</button>
+      <span class="month-title" id="mTitle"></span>
+      <button class="nav-btn" onclick="changeMonth(1)">&#8250;</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+
+  <div id="listView" style="display:none"></div>
+
+  <div class="detail" id="detailPanel">
+    <div class="dh">
+      <span class="dh-date" id="dDate"></span>
+      <span class="dh-phase" id="dPhase"></span>
+    </div>
+    <div class="mini-bar-wrap">
+      <div class="dbar-row">
+        <span class="dbar-lbl">Hôm nay</span>
+        <span class="dbar-lbl" id="dProg"></span>
+      </div>
+      <div class="mini-bar-bg"><div class="mini-bar-fill" id="dBar" style="width:0%"></div></div>
+    </div>
+    <div class="rec-box" id="recBox">
+      <div class="rec-label">Recommend hôm nay</div>
+      <div class="rec-text" id="recGoal"></div>
+      <div class="rec-tasks" id="recTasks"></div>
+      <button class="add-rec-btn" id="addRecBtn" onclick="addAllRec()">+ Thêm tất cả vào todo</button>
+    </div>
+    <div class="tlist" id="taskList"></div>
+    <div class="add-row">
+      <input class="add-in" id="addIn" placeholder="Thêm task thủ công..."/>
+      <select class="tsel" id="tagSel">
+        <option value="infra">Infra</option>
+        <option value="auth">Auth</option>
+        <option value="movie">Movie</option>
+        <option value="stream">Stream</option>
+        <option value="kafka">Kafka</option>
+        <option value="review">Review</option>
+      </select>
+      <button class="abtn" onclick="addTask()">+ Thêm</button>
+    </div>
+  </div>
+
+  <div class="hist-section">
+    <div class="hist-hdr">
+      <span class="hist-title">Lịch sử chỉnh sửa</span>
+      <button class="hist-clear" onclick="clearHist()">Xóa</button>
+    </div>
+    <div class="hist-list" id="histList"></div>
+  </div>
+
+  <!-- EVENING ROUTINE -->
+  <div class="ev-section">
+    <div class="ev-header">
+      <div>
+        <div class="ev-title-row"><div class="ev-dot"></div><span class="ev-title">Evening Routine</span></div>
+        <div class="ev-subtitle">Atomic Habits — mỗi tối sau khi đi làm về</div>
+      </div>
+      <span class="ev-streak" id="evStreak">0 ngày streak</span>
+    </div>
+
+    <div class="ev-15min">
+      <div class="ev-15-title">19:00 — 15 phút đầu tiên chống lười (quan trọng nhất)</div>
+      <div class="ev-15-steps">
+        <div class="ev-15-step"><div class="ev-15-num">1</div>Vào nhà: thay đồ NGAY, chưa được ngồi sofa</div>
+        <div class="ev-15-step"><div class="ev-15-num">2</div>Uống 1 ly nước — đứng, không ngồi</div>
+        <div class="ev-15-step"><div class="ev-15-num">3</div>Set timer 20 phút nghỉ, nằm xuống — KHÔNG cầm điện thoại</div>
+        <div class="ev-15-step"><div class="ev-15-num">4</div>Khi timer kêu: đứng dậy ngay, mặc đồ tập — không suy nghĩ</div>
+        <div class="ev-15-step"><div class="ev-15-num">5</div>Làm 5 push-up đầu tiên — cơ thể sẽ tự muốn làm tiếp</div>
+      </div>
+    </div>
+
+    <div class="ev-tip">
+      <div class="ev-tip-label">Phim = công cụ học tiếng Anh</div>
+      <div class="ev-tip-text">Xem phim trên NovaPlay với phụ đề tiếng Anh. Mỗi tập chọn 3 câu hay → ghi vào Anki. Đây không phải giải trí nữa — đây là học.</div>
+    </div>
+
+    <div class="ev-progress-row">
+      <div class="ev-prog-card">
+        <div class="ev-prog-label">Tiếng Anh (tháng)</div>
+        <div class="ev-prog-val" id="evEnCount">0/30</div>
+        <div class="ev-prog-bar-bg"><div class="ev-prog-bar-fill" id="evEnBar" style="width:0%;background:#185FA5"></div></div>
+      </div>
+      <div class="ev-prog-card">
+        <div class="ev-prog-label">Đọc sách (tháng)</div>
+        <div class="ev-prog-val" id="evBookCount">0/30</div>
+        <div class="ev-prog-bar-bg"><div class="ev-prog-bar-fill" id="evBookBar" style="width:0%;background:#3B6D11"></div></div>
+      </div>
+      <div class="ev-prog-card">
+        <div class="ev-prog-label">Thể dục (tháng)</div>
+        <div class="ev-prog-val" id="evGymCount">0/30</div>
+        <div class="ev-prog-bar-bg"><div class="ev-prog-bar-fill" id="evGymBar" style="width:0%;background:#854F0B"></div></div>
+      </div>
+    </div>
+
+    <div class="ev-timeline" id="evTimeline"></div>
+  </div>
+</div>
+
+<script>
+const STORE='np_sprint_v1';
+const HSTORE='np_hist_v1';
+const START=new Date(2026,2,21);
+const END=new Date(2026,3,30);
+const TODAY=new Date();
+const DAYS=['CN','T2','T3','T4','T5','T6','T7'];
+const MONTHS=['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+const DNAMES=['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
+const TAG_CLS={infra:'ti',auth:'ta',movie:'tm',stream:'ts',kafka:'tk',review:'tr'};
+const TAG_LBL={infra:'Infra',auth:'Auth',movie:'Movie',stream:'Streaming',kafka:'Kafka',review:'Review'};
+const PHASE_COLORS={'Infra & Setup':'#534AB7','Auth & User':'#185FA5','Movie & Catalog':'#1D9E75','Streaming':'#BA7517','Kafka & Email':'#993C1D','Testing & Deploy':'#888780'};
+
+const SCHEDULE={
+'2026-03-21':{phase:'Infra & Setup',goal:'Kickoff: dựng nền móng dự án',tasks:[{t:'Tạo FROZEN_SERVICES.md, liệt kê 6 service tạm freeze',tag:'infra'},{t:'Chạy docker-compose up, ghi log lỗi ra file',tag:'infra'},{t:'Verify PostgreSQL + MongoDB + Redis kết nối được',tag:'infra'},{t:'Tạo .env.example với tất cả biến cần thiết',tag:'infra'},{t:'Push lên staging lần đầu — dù chỉ là docker-compose',tag:'infra'}]},
+'2026-03-22':{phase:'Infra & Setup',goal:'Setup API Gateway + Discovery Server',tasks:[{t:'Chạy Eureka Discovery Server, verify dashboard',tag:'infra'},{t:'Config Spring Cloud Gateway routing cơ bản',tag:'infra'},{t:'Test Gateway forward request đến 1 service bất kỳ',tag:'infra'},{t:'Viết ADR-001: lý do chọn Eureka vs Consul',tag:'review'}]},
+'2026-03-23':{phase:'Auth & User',goal:'Auth Service — Register & Login',tasks:[{t:'Setup Spring Security + JWT filter chain',tag:'auth'},{t:'Implement POST /auth/register, hash password bcrypt',tag:'auth'},{t:'Implement POST /auth/login, trả access+refresh token',tag:'auth'},{t:'Test bằng Postman: register → login → nhận JWT',tag:'auth'},{t:'Commit code lên branch feature/auth-service',tag:'review'}]},
+'2026-03-24':{phase:'Auth & User',goal:'Auth Service — Token management',tasks:[{t:'Implement POST /auth/refresh-token',tag:'auth'},{t:'Implement POST /auth/logout (blacklist token Redis)',tag:'auth'},{t:'Viết unit test JwtService (sign, verify, expiry)',tag:'auth'},{t:'Setup Testcontainers PostgreSQL cho integration test',tag:'auth'}]},
+'2026-03-25':{phase:'Auth & User',goal:'User Service cơ bản',tasks:[{t:'Tạo User Profile entity + repository (MongoDB)',tag:'auth'},{t:'Implement GET/PUT /users/{id}/profile',tag:'auth'},{t:'API Gateway: add JWT validation filter',tag:'infra'},{t:'Test auth flow end-to-end qua Gateway',tag:'auth'}]},
+'2026-03-26':{phase:'Auth & User',goal:'Củng cố Auth + viết test',tasks:[{t:'Viết integration test cho /register và /login',tag:'auth'},{t:'Rate limiting tại Gateway (Redis, 100 req/min)',tag:'infra'},{t:'Viết ADR-002: JWT stateless vs session',tag:'review'},{t:'Review + merge branch auth vào main',tag:'review'}]},
+'2026-03-27':{phase:'Auth & User',goal:'Buffer day + review tuần 1',tasks:[{t:'Fix bug còn tồn đọng từ auth service',tag:'auth'},{t:'Viết README.md cho auth-service',tag:'review'},{t:'Update FROZEN_SERVICES.md nếu có thay đổi',tag:'review'}]},
+'2026-03-28':{phase:'Movie & Catalog',goal:'Movie Service — CRUD cơ bản',tasks:[{t:'Setup Spring Data MongoDB cho Movie entity',tag:'movie'},{t:'Implement POST /movies (admin upload metadata)',tag:'movie'},{t:'Implement GET /movies với pagination',tag:'movie'},{t:'Implement GET /movies/{id} chi tiết phim',tag:'movie'},{t:'Seed 5 phim test vào MongoDB',tag:'movie'}]},
+'2026-03-29':{phase:'Movie & Catalog',goal:'Movie Service — Search & Filter',tasks:[{t:'Tạo MongoDB text index cho title + description',tag:'movie'},{t:'Implement GET /movies/search?q= với text search',tag:'movie'},{t:'Filter theo genre, year, rating',tag:'movie'},{t:'Viết unit test cho MovieService',tag:'movie'}]},
+'2026-03-30':{phase:'Movie & Catalog',goal:'Watchlist API',tasks:[{t:'Tạo Watchlist entity (PostgreSQL, user-service)',tag:'movie'},{t:'Implement POST/DELETE /watchlist/{movieId}',tag:'movie'},{t:'Implement GET /watchlist — list phim đã lưu',tag:'movie'},{t:'Test watchlist qua Gateway với JWT',tag:'movie'}]},
+'2026-03-31':{phase:'Movie & Catalog',goal:'Tổng kết tháng 3 + buffer',tasks:[{t:'Review toàn bộ code tháng 3, ghi TODO còn lại',tag:'review'},{t:'Fix lỗi tồn đọng của movie-service',tag:'movie'},{t:'Commit + deploy staging, test end-to-end',tag:'infra'},{t:'Viết ADR-003: MongoDB vs PostgreSQL cho catalog',tag:'review'}]},
+'2026-04-01':{phase:'Streaming',goal:'Streaming Service — Setup & S3',tasks:[{t:'Setup AWS S3 SDK (hoặc Cloudflare R2)',tag:'stream'},{t:'Upload 1 file .mp4 test lên S3 bằng tay',tag:'stream'},{t:'Convert sang HLS bằng FFmpeg offline (1 lần)',tag:'stream'},{t:'Verify file .m3u8 + .ts segments trên S3',tag:'stream'},{t:'Tạo Streaming Service Spring Boot skeleton',tag:'stream'}]},
+'2026-04-02':{phase:'Streaming',goal:'Streaming API — Serve HLS',tasks:[{t:'Implement GET /stream/{id}/manifest — trả HLS URL',tag:'stream'},{t:'Tạo presigned URL S3 cho .ts segments',tag:'stream'},{t:'Test stream trên VLC hoặc trình duyệt',tag:'stream'},{t:'Fix CORS nếu cần',tag:'stream'}]},
+'2026-04-03':{phase:'Streaming',goal:'Streaming — Security & Progress',tasks:[{t:'Protect /stream/** — chỉ authenticated user',tag:'stream'},{t:'Implement progress tracking (lưu vị trí xem)',tag:'stream'},{t:'POST /stream/{id}/progress — update progress',tag:'stream'},{t:'GET /stream/{id}/progress — lấy lại progress',tag:'stream'}]},
+'2026-04-04':{phase:'Streaming',goal:'Media upload flow',tasks:[{t:'Implement POST /media/upload — nhận file từ admin',tag:'stream'},{t:'Upload lên S3, trigger FFmpeg convert',tag:'stream'},{t:'Lưu metadata vào MongoDB sau khi xong',tag:'stream'},{t:'Test full upload flow end-to-end',tag:'stream'}]},
+'2026-04-05':{phase:'Streaming',goal:'Buffer + test streaming',tasks:[{t:'Viết integration test cho streaming endpoints',tag:'stream'},{t:'Đo latency stream, ghi kết quả ra doc',tag:'review'},{t:'Viết README.md cho streaming-service',tag:'review'}]},
+'2026-04-06':{phase:'Streaming',goal:'Buffer day chủ nhật',tasks:[{t:'Fix bug streaming còn tồn đọng',tag:'stream'},{t:'Review lại architecture diagram, cập nhật nếu lệch',tag:'review'}]},
+'2026-04-07':{phase:'Kafka & Email',goal:'Kafka — Setup & Auth Producer',tasks:[{t:'Verify Kafka + Zookeeper chạy trong Docker',tag:'kafka'},{t:'Tạo topic user.registered trong Kafka',tag:'kafka'},{t:'Implement Kafka Producer trong Auth Service',tag:'kafka'},{t:'Publish event sau khi register thành công',tag:'kafka'},{t:'Monitor message trên Kafka UI',tag:'kafka'}]},
+'2026-04-08':{phase:'Kafka & Email',goal:'Email Service — Consumer',tasks:[{t:'Tạo Email Service Spring Boot',tag:'kafka'},{t:'Implement Kafka Consumer lắng nghe user.registered',tag:'kafka'},{t:'Gửi email chào mừng qua SMTP (dùng Mailtrap test)',tag:'kafka'},{t:'Test full flow: register → Kafka → email gửi',tag:'kafka'}]},
+'2026-04-09':{phase:'Kafka & Email',goal:'Kafka — Error handling',tasks:[{t:'Setup Dead Letter Queue (DLQ) cho failed messages',tag:'kafka'},{t:'Idempotency check tránh duplicate email',tag:'kafka'},{t:'Retry policy cho Kafka consumer',tag:'kafka'},{t:'Viết unit test cho email consumer',tag:'kafka'}]},
+'2026-04-10':{phase:'Kafka & Email',goal:'Notification cơ bản',tasks:[{t:'Implement email reset password flow',tag:'kafka'},{t:'Tạo email template HTML đơn giản',tag:'kafka'},{t:'Test email reset password end-to-end',tag:'kafka'}]},
+'2026-04-11':{phase:'Kafka & Email',goal:'Buffer + tổng kết Kafka phase',tasks:[{t:'Viết ADR-004: Kafka scope chỉ cho email workflows',tag:'review'},{t:'Fix bug Kafka còn tồn đọng',tag:'kafka'},{t:'Deploy staging, test toàn bộ Kafka flow',tag:'infra'}]},
+'2026-04-12':{phase:'Testing & Deploy',goal:'Testing — Unit & Integration',tasks:[{t:'Kiểm tra coverage report, target >= 70% business logic',tag:'review'},{t:'Viết integration test còn thiếu cho movie-service',tag:'movie'},{t:'Viết integration test cho streaming-service',tag:'stream'},{t:'Chạy ./mvnw verify — fix tất cả lỗi',tag:'review'}]},
+'2026-04-13':{phase:'Testing & Deploy',goal:'Docker — Production config',tasks:[{t:'Viết Dockerfile multi-stage cho mỗi service',tag:'infra'},{t:'Tạo docker-compose.prod.yml tách biệt dev',tag:'infra'},{t:'Verify tất cả service build Docker image thành công',tag:'infra'},{t:'Không hardcode secret — dùng env vars',tag:'infra'}]},
+'2026-04-14':{phase:'Testing & Deploy',goal:'GitHub Actions CI/CD',tasks:[{t:'Viết workflow build + test tự động khi push main',tag:'infra'},{t:'Add Docker build step vào CI pipeline',tag:'infra'},{t:'Test pipeline chạy xanh lần đầu',tag:'infra'},{t:'Setup Dependabot cho security updates',tag:'infra'}]},
+'2026-04-15':{phase:'Testing & Deploy',goal:'Observability setup',tasks:[{t:'Setup Prometheus scrape metrics từ /actuator',tag:'infra'},{t:'Import Grafana dashboard JVM + HTTP metrics',tag:'infra'},{t:'Setup Loki cho centralized logging',tag:'infra'},{t:'Verify logs + metrics hiện đúng trên Grafana',tag:'infra'}]},
+'2026-04-16':{phase:'Testing & Deploy',goal:'Performance test',tasks:[{t:'Viết k6 script test 100 concurrent users',tag:'review'},{t:'Chạy load test, ghi kết quả p95 latency',tag:'review'},{t:'Identify bottleneck nếu có, ghi vào issue',tag:'review'}]},
+'2026-04-17':{phase:'Testing & Deploy',goal:'Buffer + polish',tasks:[{t:'Fix lỗi phát hiện từ load test',tag:'review'},{t:'Add Redis caching cho GET /movies (hot data)',tag:'infra'},{t:'Review tất cả API response format cho nhất quán',tag:'review'}]},
+'2026-04-18':{phase:'Testing & Deploy',goal:'Security hardening',tasks:[{t:'Chạy OWASP Dependency Check, fix critical CVEs',tag:'review'},{t:'Verify HTTPS config + CORS đúng cho production',tag:'infra'},{t:'Kiểm tra không có secret nào bị commit vào git',tag:'review'}]},
+'2026-04-19':{phase:'Testing & Deploy',goal:'Deploy lên staging thật',tasks:[{t:'Deploy lên Railway.app hoặc Render.com',tag:'infra'},{t:'Test end-to-end trên staging URL thật',tag:'review'},{t:'Fix lỗi môi trường production (env vars, DNS)',tag:'infra'},{t:'Setup domain + HTTPS (Cloudflare free)',tag:'infra'}]},
+'2026-04-20':{phase:'Testing & Deploy',goal:'Buffer + UAT',tasks:[{t:'User Acceptance Test: toàn bộ happy path',tag:'review'},{t:'Fix lỗi UAT phát hiện',tag:'review'},{t:'Update README tổng của repo',tag:'review'}]},
+'2026-04-21':{phase:'Testing & Deploy',goal:'Documentation sprint',tasks:[{t:'Viết README.md cho tất cả services còn thiếu',tag:'review'},{t:'Update Swagger/OpenAPI spec đầy đủ',tag:'review'},{t:'Viết DEPLOYMENT.md — hướng dẫn deploy từ đầu',tag:'review'}]},
+'2026-04-22':{phase:'Testing & Deploy',goal:'Final bug fix + polish',tasks:[{t:'Chạy toàn bộ test suite lần cuối',tag:'review'},{t:'Fix tất cả warning trong build log',tag:'review'},{t:'Optimize Docker image size (dùng alpine base)',tag:'infra'}]},
+'2026-04-23':{phase:'Testing & Deploy',goal:'Pre-launch checklist',tasks:[{t:'Verify backup strategy cho database',tag:'infra'},{t:'Setup UptimeRobot monitor cho staging URL',tag:'infra'},{t:'Setup Sentry error tracking (free tier)',tag:'infra'},{t:'Viết runbook: cách restart service khi sự cố',tag:'review'}]},
+'2026-04-24':{phase:'Testing & Deploy',goal:'Buffer — final fixes',tasks:[{t:'Fix bất kỳ lỗi còn lại từ pre-launch checklist',tag:'review'},{t:'Demo nội bộ: chạy qua toàn bộ luồng user',tag:'review'}]},
+'2026-04-25':{phase:'Testing & Deploy',goal:'Buffer dự phòng',tasks:[{t:'Dành ngày này cho task bị trượt từ các ngày trước',tag:'review'},{t:'Cập nhật tiến độ thực tế vào planner',tag:'review'}]},
+'2026-04-26':{phase:'Testing & Deploy',goal:'Buffer dự phòng',tasks:[{t:'Dành ngày này cho task bị trượt từ các ngày trước',tag:'review'},{t:'Review toàn bộ ADR đã viết',tag:'review'}]},
+'2026-04-27':{phase:'Testing & Deploy',goal:'Final staging test',tasks:[{t:'End-to-end test lần cuối trên staging',tag:'review'},{t:'Confirm tất cả CI/CD pipeline xanh',tag:'infra'},{t:'Chuẩn bị release notes',tag:'review'}]},
+'2026-04-28':{phase:'Testing & Deploy',goal:'Go-live preparation',tasks:[{t:'Final review security checklist',tag:'review'},{t:'Backup database lần cuối trước go-live',tag:'infra'},{t:'Thông báo go-live plan',tag:'review'}]},
+'2026-04-29':{phase:'Testing & Deploy',goal:'Deploy to production',tasks:[{t:'Deploy production build',tag:'infra'},{t:'Monitor logs + metrics sau deploy',tag:'infra'},{t:'Test nhanh các endpoint quan trọng trên prod',tag:'review'},{t:'Fix hotfix nếu có lỗi nghiêm trọng',tag:'review'}]},
+'2026-04-30':{phase:'Testing & Deploy',goal:'Launch day — NovaPlay is live!',tasks:[{t:'Final smoke test toàn bộ tính năng MVP',tag:'review'},{t:'Verify monitoring + alerting hoạt động',tag:'infra'},{t:'Viết post-mortem: những gì học được',tag:'review'},{t:'Celebrate — bạn đã build xong một production system!',tag:'review'}]}
+};
+
+let viewMonth=2,viewYear=2026;
+let selectedDate=dateKey(TODAY);
+let currentView='cal';
+
+// ======= SYNC CONFIG =======
+// Paste URL Google Apps Script của bạn vào đây sau khi deploy
+const GAS_URL = localStorage.getItem('np_gas_url') || '';
+let _syncEnabled = !!GAS_URL;
+let _syncQueue = [];
+let _syncing = false;
+
+function showSyncBanner(){
+  if(document.getElementById('syncBanner'))return;
+  const b=document.createElement('div');
+  b.id='syncBanner';
+  b.style.cssText='background:#EEEDFE;border:1px solid #AFA9EC;border-radius:12px;padding:12px 14px;margin-bottom:1rem;font-size:13px;color:#3C3489';
+  b.innerHTML=`<div style="font-weight:500;margin-bottom:6px">Chưa cấu hình Google Sheets Sync</div>
+    <div style="color:#534AB7;margin-bottom:8px;font-size:12px">Nhập URL Google Apps Script để đồng bộ data giữa Linux và iPhone.</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <input id="gasInput" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;min-width:0;font-size:12px;padding:6px 8px;border:1px solid #AFA9EC;border-radius:8px;background:white;color:#1c1917;outline:none"/>
+      <button onclick="saveGasUrl()" style="font-size:12px;padding:6px 12px;border:1px solid #534AB7;border-radius:8px;background:transparent;color:#534AB7;cursor:pointer;white-space:nowrap">Lưu & Kết nối</button>
+    </div>`;
+  document.querySelector('.app').insertBefore(b,document.querySelector('.app').firstChild);
+}
+
+function saveGasUrl(){
+  const url=document.getElementById('gasInput').value.trim();
+  if(!url||!url.startsWith('https://script.google.com')){alert('URL không hợp lệ. Phải bắt đầu bằng https://script.google.com');return;}
+  localStorage.setItem('np_gas_url',url);
+  _syncEnabled=true;
+  document.getElementById('syncBanner').remove();
+  showSyncStatus('Đang kết nối...','syncing');
+  syncFromCloud().then(()=>showSyncStatus('Đã kết nối Google Sheets','ok'));
+}
+
+function showSyncStatus(msg,state){
+  let el=document.getElementById('syncStatus');
+  if(!el){
+    el=document.createElement('div');
+    el.id='syncStatus';
+    el.style.cssText='font-size:11px;padding:3px 10px;border-radius:20px;margin-left:8px;display:inline-block';
+    document.querySelector('.brand').appendChild(el);
+  }
+  const styles={ok:'background:#E1F5EE;color:#0F6E56',syncing:'background:#FAEEDA;color:#854F0B',err:'background:#FCEBEB;color:#A32D2D'};
+  el.style.cssText+=';'+styles[state];
+  el.textContent=state==='syncing'?'⟳ '+msg:state==='ok'?'✓ '+msg:'✗ '+msg;
+}
+
+async function gasGet(key){
+  if(!_syncEnabled)return null;
+  const url=localStorage.getItem('np_gas_url');
+  try{
+    const r=await fetch(url+'?key='+encodeURIComponent(key));
+    const j=await r.json();
+    return j.ok?j.data:null;
+  }catch(e){return null;}
+}
+
+async function gasSet(key,value){
+  if(!_syncEnabled)return;
+  const url=localStorage.getItem('np_gas_url');
+  _syncQueue.push({key,value});
+  if(_syncing)return;
+  _syncing=true;
+  showSyncStatus('Đang lưu...','syncing');
+  while(_syncQueue.length>0){
+    const item=_syncQueue.shift();
+    try{
+      await fetch(url,{method:'POST',body:JSON.stringify({key:item.key,value:item.value}),headers:{'Content-Type':'application/json'}});
+    }catch(e){showSyncStatus('Lỗi sync','err');_syncing=false;return;}
+  }
+  _syncing=false;
+  showSyncStatus('Đã lưu','ok');
+  setTimeout(()=>{const el=document.getElementById('syncStatus');if(el)el.textContent='✓ Synced';},1500);
+}
+
+async function syncFromCloud(){
+  if(!_syncEnabled)return;
+  showSyncStatus('Đang tải data...','syncing');
+  try{
+    const tasks=await gasGet(STORE);
+    const hist=await gasGet(HSTORE);
+    if(tasks)localStorage.setItem(STORE,typeof tasks==='string'?tasks:JSON.stringify(tasks));
+    if(hist)localStorage.setItem(HSTORE,typeof hist==='string'?hist:JSON.stringify(hist));
+    renderCalendar();renderStats();renderDetail();renderHist();renderEvening();renderEvStats();
+    showSyncStatus('Synced','ok');
+  }catch(e){showSyncStatus('Lỗi kết nối','err');}
+}
+
+function dateKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+
+function loadData(){try{return JSON.parse(localStorage.getItem(STORE))||{}}catch(e){return{}}}
+function saveData(d){
+  const s=JSON.stringify(d);
+  try{localStorage.setItem(STORE,s)}catch(e){}
+  gasSet(STORE,s);
+}
+function loadHist(){try{return JSON.parse(localStorage.getItem(HSTORE))||[]}catch(e){return[]}}
+function saveHist(h){
+  const s=JSON.stringify(h.slice(-100));
+  try{localStorage.setItem(HSTORE,s)}catch(e){}
+  gasSet(HSTORE,s);
+}
+function isInRange(dk){return dk>='2026-03-21'&&dk<='2026-04-30'}
+function getPhaseColor(p){return PHASE_COLORS[p]||'#888780'}
+
+function addHist(type,text,dk){
+  const h=loadHist(),t=new Date();
+  h.unshift({type,text,date:dk,time:t.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}),ts:t.getTime()});
+  saveHist(h);renderHist();
+}
+function renderHist(){
+  const h=loadHist(),el=document.getElementById('histList');
+  if(!h.length){el.innerHTML='<div class="empty">Chưa có lịch sử</div>';return}
+  const labels={add:'Thêm',done:'Hoàn thành',undone:'Bỏ xong',del:'Xóa'};
+  el.innerHTML=h.slice(0,30).map(i=>`<div class="hi"><div class="hdot ${i.type}"></div><div class="hbody"><div class="htxt">${labels[i.type]||i.type}: <strong>${i.text}</strong></div><div class="htime">${i.date} · ${i.time}</div></div></div>`).join('');
+}
+function clearHist(){saveHist([]);renderHist()}
+function getTasksForDate(dk){return(loadData()[dk])||[]}
+function saveTasksForDate(dk,tasks){const d=loadData();d[dk]=tasks;saveData(d)}
+
+function addTask(){
+  const inp=document.getElementById('addIn'),tag=document.getElementById('tagSel').value,text=inp.value.trim();
+  if(!text)return;
+  const tasks=getTasksForDate(selectedDate);
+  tasks.push({id:Date.now(),text,tag,done:false});
+  saveTasksForDate(selectedDate,tasks);
+  addHist('add',text,selectedDate);
+  inp.value='';renderDetail();renderCalendar();renderStats();
+  if(currentView==='list')renderListView();
+}
+
+function addAllRec(){
+  const sched=SCHEDULE[selectedDate];if(!sched)return;
+  const tasks=getTasksForDate(selectedDate),existing=tasks.map(t=>t.text);
+  let added=0;
+  sched.tasks.forEach(rt=>{if(!existing.includes(rt.t)){tasks.push({id:Date.now()+Math.random(),text:rt.t,tag:rt.tag,done:false});added++;}});
+  if(added>0){saveTasksForDate(selectedDate,tasks);addHist('add',added+' recommended tasks',selectedDate);renderDetail();renderCalendar();renderStats();if(currentView==='list')renderListView();}
+}
+
+function toggleTask(dk,id){
+  const tasks=getTasksForDate(dk),t=tasks.find(x=>x.id===id);if(!t)return;
+  t.done=!t.done;saveTasksForDate(dk,tasks);addHist(t.done?'done':'undone',t.text,dk);
+  renderDetail();renderCalendar();renderStats();if(currentView==='list')renderListView();
+}
+
+function deleteTask(dk,id){
+  let tasks=getTasksForDate(dk);const t=tasks.find(x=>x.id===id);if(t)addHist('del',t.text,dk);
+  tasks=tasks.filter(x=>x.id!==id);saveTasksForDate(dk,tasks);
+  renderDetail();renderCalendar();renderStats();if(currentView==='list')renderListView();
+}
+
+function renderDetail(){
+  const tasks=getTasksForDate(selectedDate),parts=selectedDate.split('-');
+  const d=new Date(+parts[0],+parts[1]-1,+parts[2]);
+  document.getElementById('dDate').textContent=DNAMES[d.getDay()]+', '+parts[2]+'/'+parts[1]+'/'+parts[0];
+  const sched=SCHEDULE[selectedDate];
+  if(sched){
+    const ph=document.getElementById('dPhase');ph.textContent=sched.phase;
+    ph.style.background=getPhaseColor(sched.phase)+'22';ph.style.color=getPhaseColor(sched.phase);
+    document.getElementById('recGoal').textContent=sched.goal;
+    document.getElementById('recTasks').innerHTML=sched.tasks.map(rt=>`<div class="rec-task-item"><div class="rec-bullet"></div>${rt.t}</div>`).join('');
+    document.getElementById('recBox').style.display='block';document.getElementById('addRecBtn').style.display='block';
+  }else{document.getElementById('dPhase').textContent='Ngoài sprint';document.getElementById('recBox').style.display='none';}
+  const done=tasks.filter(t=>t.done).length,total=tasks.length;
+  document.getElementById('dProg').textContent=done+'/'+total+' xong';
+  document.getElementById('dBar').style.width=(total>0?Math.round(done/total*100):0)+'%';
+  const tl=document.getElementById('taskList');
+  if(!tasks.length){tl.innerHTML='<div class="empty">Chưa có task. Bấm "+ Thêm tất cả vào todo" để bắt đầu!</div>';return}
+  tl.innerHTML=tasks.map(t=>`<div class="trow${t.done?' done':''}">
+    <div class="chk${t.done?' on':''}" onclick="toggleTask('${selectedDate}',${t.id})"><svg viewBox="0 0 9 9" fill="none"><polyline points="1,4.5 3.5,7 8,1.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="tinfo"><div class="ttxt">${t.text}</div><div class="tmeta"><span class="ttag ${TAG_CLS[t.tag]||'tr'}">${TAG_LBL[t.tag]||t.tag}</span></div></div>
+    <button class="tdel" onclick="deleteTask('${selectedDate}',${t.id})">&#215;</button>
+  </div>`).join('');
+}
+
+function renderCalendar(){
+  const grid=document.getElementById('calGrid');
+  grid.innerHTML=DAYS.map(d=>`<div class="dow">${d}</div>`).join('');
+  const first=new Date(viewYear,viewMonth,1).getDay(),daysIn=new Date(viewYear,viewMonth+1,0).getDate();
+  const todayKey=dateKey(TODAY),data=loadData();
+  for(let i=0;i<first;i++)grid.innerHTML+=`<div class="cal-cell empty"></div>`;
+  for(let d=1;d<=daysIn;d++){
+    const dk=viewYear+'-'+String(viewMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const inRange=isInRange(dk),tasks=data[dk]||[],done=tasks.filter(t=>t.done).length;
+    const isToday=dk===todayKey,isSel=dk===selectedDate,sched=SCHEDULE[dk];
+    const phColor=sched?getPhaseColor(sched.phase):'transparent';
+    const pills=tasks.slice(0,2).map(t=>`<div class="dpill ${t.done?'dpill-done':'dpill-todo'}">${t.text}</div>`).join('');
+    const recPill=sched&&tasks.length===0?`<div class="dpill dpill-rec">${sched.tasks[0]?sched.tasks[0].t.substring(0,18)+'...':''}</div>`:'';
+    grid.innerHTML+=`<div class="cal-cell${!inRange?' out-range':''}${isToday?' today':''}${isSel?' selected':''}" ${inRange?`onclick="selectDay('${dk}')"`:''}><div class="day-num">${d}<div class="day-phase-dot" style="background:${phColor}"></div></div><div class="day-pills">${pills||recPill}${tasks.length>2?`<div style="font-size:9px;color:var(--text-tertiary)">+${tasks.length-2}</div>`:''}</div></div>`;
+  }
+  document.getElementById('mTitle').textContent=MONTHS[viewMonth]+' '+viewYear;
+}
+
+function renderStats(){
+  const dLeft=Math.max(0,Math.round((END-TODAY)/(1000*60*60*24)));
+  document.getElementById('sDaysLeft').textContent=dLeft;
+  const badge=document.getElementById('deadlineBadge');
+  badge.className='deadline-badge'+(dLeft<=7?' warn':'');
+  badge.textContent=dLeft<=0?'Deadline hôm nay!':dLeft+' ngày còn lại';
+  const data=loadData();let total=0,done=0;
+  Object.keys(data).forEach(k=>{if(isInRange(k)){total+=data[k].length;done+=data[k].filter(t=>t.done).length;}});
+  document.getElementById('sTotal').textContent=total;document.getElementById('sDone').textContent=done;
+  document.getElementById('sRate').textContent=(total>0?Math.round(done/total*100):0)+'%';
+  const totalDays=Math.round((END-START)/(1000*60*60*24))+1;
+  const passedDays=Math.max(0,Math.min(totalDays,Math.round((TODAY-START)/(1000*60*60*24))+1));
+  const timePct=Math.round(passedDays/totalDays*100);
+  document.getElementById('obPct').textContent=timePct+'% thời gian đã qua';
+  document.getElementById('obFill').style.width=timePct+'%';
+}
+
+function renderListView(){
+  const el=document.getElementById('listView'),data=loadData();
+  const filterMonth=viewYear+'-'+String(viewMonth+1).padStart(2,'0');
+  const allDates=[];
+  for(let d=new Date(START);d<=END;d.setDate(d.getDate()+1))allDates.push(dateKey(new Date(d)));
+  const dates=allDates.filter(dk=>dk.startsWith(filterMonth));
+  el.innerHTML=dates.map(dk=>{
+    const tasks=data[dk]||[],sched=SCHEDULE[dk],parts=dk.split('-');
+    const d=new Date(+parts[0],+parts[1]-1,+parts[2]),done=tasks.filter(t=>t.done).length;
+    const phColor=sched?getPhaseColor(sched.phase):'#888780';
+    return`<div class="list-view-day"><div class="lvd-header" onclick="selectDay('${dk}')"><span class="lvd-date"><span style="width:8px;height:8px;border-radius:50%;background:${phColor};display:inline-block;flex-shrink:0"></span>${DNAMES[d.getDay()].substring(0,2)} ${parts[2]}/${parts[1]}${sched?' — '+sched.goal:''}</span><span class="lvd-prog">${tasks.length>0?done+'/'+tasks.length+' xong':'Chưa có task'}</span></div>${tasks.map(t=>`<div class="trow${t.done?' done':''}"><div class="chk${t.done?' on':''}" onclick="toggleTask('${dk}',${t.id})"><svg viewBox="0 0 9 9" fill="none"><polyline points="1,4.5 3.5,7 8,1.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="tinfo"><div class="ttxt">${t.text}</div><div class="tmeta"><span class="ttag ${TAG_CLS[t.tag]||'tr'}">${TAG_LBL[t.tag]||t.tag}</span></div></div><button class="tdel" onclick="deleteTask('${dk}',${t.id})">&#215;</button></div>`).join('')}</div>`;
+  }).join('');
+}
+
+function selectDay(dk){if(!isInRange(dk))return;selectedDate=dk;renderCalendar();renderDetail();renderEvening();renderEvStats();}
+function changeMonth(dir){viewMonth+=dir;if(viewMonth>11){viewMonth=0;viewYear++}if(viewMonth<0){viewMonth=11;viewYear--}renderCalendar();if(currentView==='list')renderListView();}
+function setView(v){currentView=v;document.getElementById('btnCal').className='vbtn'+(v==='cal'?' active':'');document.getElementById('btnList').className='vbtn'+(v==='list'?' active':'');document.getElementById('calView').style.display=v==='cal'?'block':'none';document.getElementById('listView').style.display=v==='list'?'block':'none';if(v==='list')renderListView();}
+
+document.getElementById('addIn').addEventListener('keydown',e=>{if(e.key==='Enter')addTask()});
+if(TODAY<START||TODAY>END){selectedDate='2026-03-21';viewMonth=2;viewYear=2026;}
+renderCalendar();renderStats();renderDetail();renderHist();
+
+// ========= EVENING ROUTINE =========
+const EV_STORE='np_evening_v1';
+const EV_SLOTS=[
+  {id:'rest',time:'19:00',icon:'🛋️',title:'Nghỉ phục hồi — 20 phút',badge:'buffer',badgeText:'Phục hồi',desc:'Nằm nghỉ, KHÔNG xem điện thoại. Cortisol cần 15–20p để hạ xuống mức ổn định sau stress đi đường và công việc.',micro:'Siêu nhỏ: chỉ cần thay đồ thoải mái và nằm xuống.',reward:null,type:'buffer',science:'Cortisol hạ sau 15–20p → cơ thể chuyển sang recovery mode'},
+  {id:'gym',time:'19:20',icon:'💪',title:'Tập thể dục — 30 phút',badge:'gym',badgeText:'Thể dục',desc:'10p warm-up + 15p workout (push-up, squat, plank) + 5p cool-down. BDNF tăng cao nhất sau tập và duy trì 2 tiếng — đây là lý do tập TRƯỚC khi học.',micro:'Siêu nhỏ: chỉ cần mặc đồ tập và làm 5 push-up — sẽ tự tiếp tục.',reward:null,type:'habit',science:'BDNF tăng sau tập → tiếp thu khi học tốt hơn 20–30%'},
+  {id:'cook',time:'19:50',icon:'🍳',title:'Nấu ăn + tắm — 30 phút',badge:'buffer',badgeText:'Sinh hoạt',desc:'Nấu món đơn giản (cơm + 1 món, ~15p) rồi tắm nước ấm (~15p). Tắm sau tập hạ nhiệt độ cơ thể, báo hiệu não chuyển sang chế độ focus.',micro:'Tip: nấu sẵn thức ăn từ tối hôm trước để tiết kiệm 15 phút.',reward:null,type:'buffer',science:'Nhiệt độ cơ thể hạ sau tắm → tín hiệu não chuyển sang chế độ học'},
+  {id:'dinner',time:'20:20',icon:'🍚',title:'Ăn tối — 30 phút',badge:'buffer',badgeText:'Ăn tối',desc:'Ăn vừa đủ, không no quá (no quá → buồn ngủ). Đây là Reward #1 sau khi đã tập xong. Không nhìn màn hình trong lúc ăn nếu được.',micro:'Đây là phần thưởng xứng đáng sau khi tập — enjoy it fully.',reward:null,type:'buffer',science:'Ăn no vừa + nghỉ 10p → glucose ổn định → não focus tốt hơn'},
+  {id:'setup',time:'20:50',icon:'🖥️',title:'Setup bàn làm việc — 10 phút',badge:'buffer',badgeText:'Ritual',desc:'Dọn bàn, rót nước, mở planner, nhìn task hôm nay. Đây là "ritual chuyển trạng thái" — não nhận ra tín hiệu và tự chuyển sang chế độ làm việc.',micro:'Siêu nhỏ: chỉ cần ngồi vào bàn và mở máy tính.',reward:null,type:'buffer',science:'Ritual lặp lại hàng ngày → não tự động vào focus mode sau ~21 ngày'},
+  {id:'code',time:'21:00',icon:'💻',title:'NovaPlay code — 45 phút',badge:'code',badgeText:'Dev',desc:'Task nặng nhất vào đây — đây là đỉnh recovery window sau tập thể dục. Dùng Pomodoro 25+5. Lấy task từ recommend phía trên.',micro:'Commit ít nhất 1 dòng code lên git — dù chỉ là sửa typo.',reward:null,type:'habit',science:'BDNF peak + glucose ổn định = khung giờ học kỹ thuật tốt nhất trong ngày'},
+  {id:'eng',time:'21:45',icon:'🇬🇧',title:'Tiếng Anh — 15 phút',badge:'en',badgeText:'English',desc:'Xem 1 clip phim/YouTube phụ đề EN (10p) + chép 3 câu hay vào Anki (5p). Phim trên NovaPlay = học tiếng Anh, không phải giải trí thuần túy.',micro:'Siêu nhỏ: chỉ cần mở 1 video và xem 2 phút đầu.',reward:null,type:'habit',science:'Spaced repetition (Anki) hiệu quả hơn học thông thường 2–3 lần'},
+  {id:'book',time:'22:00',icon:'📖',title:'Đọc sách — 20 phút',badge:'book',badgeText:'Đọc sách',desc:'Đọc sách giấy hoặc e-ink (tránh màn hình LCD). 20 phút/ngày = 12–15 cuốn/năm. Sách kỹ thuật hoặc non-fiction.',micro:'Siêu nhỏ: chỉ cần mở sách và đọc 1 trang đầu tiên.',reward:null,type:'habit',science:'Melatonin tăng từ 22:30 — đọc sách không chặn melatonin như màn hình'},
+  {id:'reward',time:'22:20',icon:'🎮',title:'Reward — game / phim tự do',badge:'reward',badgeText:'Reward',desc:'Đã tick đủ Code + Tiếng Anh + Đọc sách + Thể dục → chơi game / xem phim không giới hạn. Hoàn toàn xứng đáng, không cảm thấy tội lỗi.',micro:'Nếu chưa xong → chỉ được xem phim kết hợp học tiếng Anh (phụ đề EN).',reward:'Mở khóa sau khi tick đủ: Thể dục + Code + Tiếng Anh + Đọc sách',type:'reward',science:'Reward tức thì sau habit = vòng lặp habit loop hoàn chỉnh (Atomic Habits)'},
+  {id:'sleep',time:'23:00',icon:'😴',title:'Ngủ — tắt màn hình',badge:'buffer',badgeText:'Ngủ',desc:'Tắt màn hình trước 23:00. Để điện thoại ở phòng khác nếu được. 7–8 tiếng ngủ = recovery cho ngày mai.',micro:'Siêu nhỏ: chỉ cần đặt điện thoại xuống và nhắm mắt.',reward:null,type:'sleep',science:'7–8h ngủ → cortisol sáng hôm sau bình thường → tỉnh táo mà không cần cà phê'}
+];
+
+function evKey(dk){return'ev_'+dk}
+function loadEv(dk){try{return JSON.parse(localStorage.getItem(evKey(dk)))||{}}catch(e){return{}}}
+function saveEv(dk,data){
+  const s=JSON.stringify(data);
+  try{localStorage.setItem(evKey(dk),s)}catch(e){}
+  gasSet(evKey(dk),s);
+}
+
+function toggleEv(slotId){
+  const dk=selectedDate,data=loadEv(dk);
+  if(slotId==='reward'){
+    const habits=['gym','code','eng','book'];
+    const allDone=habits.every(h=>data[h]);
+    if(!allDone){alert('Hoàn thành Thể dục + Code + Tiếng Anh + Đọc sách trước đã!');return;}
+  }
+  data[slotId]=!data[slotId];
+  saveEv(dk,data);
+  renderEvening();renderEvStats();
+}
+
+function countHabitDone(habitId){
+  let count=0;
+  const allDates=[];
+  for(let d=new Date(START);d<=TODAY;d.setDate(d.getDate()+1))allDates.push(dateKey(new Date(d)));
+  allDates.forEach(dk=>{const ev=loadEv(dk);if(ev[habitId])count++;});
+  return count;
+}
+
+function calcStreak(){
+  let streak=0;
+  const habits=['gym','code','eng','book'];
+  for(let d=new Date(TODAY);d>=START;d.setDate(d.getDate()-1)){
+    const dk=dateKey(new Date(d));
+    const ev=loadEv(dk);
+    const allDone=habits.every(h=>ev[h]);
+    if(allDone)streak++;
+    else if(dk!==dateKey(TODAY))break;
+  }
+  return streak;
+}
+
+function renderEvening(){
+  const dk=selectedDate,data=loadEv(dk);
+  const habits=['gym','code','eng','book'];
+  const doneCount=habits.filter(h=>data[h]).length;
+  const rewardUnlocked=doneCount===4;
+  const tl=document.getElementById('evTimeline');
+  tl.innerHTML=EV_SLOTS.map(slot=>{
+    const done=!!data[slot.id];
+    const isReward=slot.type==='reward';
+    const isSleep=slot.type==='sleep';
+    const isBuffer=slot.type==='buffer';
+    const locked=isReward&&!rewardUnlocked;
+    const clickable=!locked&&!isBuffer;
+    return`<div class="ev-slot">
+      <div class="ev-time-col">
+        <div class="ev-time">${slot.time}</div>
+        <div class="ev-line"></div>
+      </div>
+      <div class="ev-card${done?' ev-done':''}${locked?' ev-locked':''}" onclick="${clickable?'toggleEv(\''+slot.id+'\')':locked?'alert(\'Hoàn thành 4 habit trước!\')':''}">
+        <div class="ev-card-header">
+          <div class="ev-card-title"><span style="font-size:14px">${slot.icon}</span>${slot.title}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="ev-badge badge-${slot.badge}">${slot.badgeText}</span>
+            ${clickable?`<div class="ev-check${done?' on':''}"><svg viewBox="0 0 9 9" fill="none"><polyline points="1,4.5 3.5,7 8,1.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`:''}
+          </div>
+        </div>
+        <div class="ev-desc">${slot.desc}</div>
+        <div class="ev-micro">${slot.micro}</div>
+        ${slot.science?`<div style="font-size:10px;color:var(--text-tertiary);margin-top:5px;padding-top:5px;border-top:1px solid var(--border-light)">Khoa học: ${slot.science}</div>`:''}
+        ${isReward?`<div class="ev-reward-unlock${rewardUnlocked?' unlocked':''}">${rewardUnlocked?'Đã mở khóa — enjoy! Bạn đã xứng đáng.':slot.reward}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('evStreak').textContent=calcStreak()+' ngày streak';
+}
+
+function renderEvStats(){
+  const total=Math.round((TODAY-START)/(1000*60*60*24))+1;
+  const en=countHabitDone('eng'),book=countHabitDone('book'),gym=countHabitDone('gym');
+  document.getElementById('evEnCount').textContent=en+'/'+total;
+  document.getElementById('evBookCount').textContent=book+'/'+total;
+  document.getElementById('evGymCount').textContent=gym+'/'+total;
+  document.getElementById('evEnBar').style.width=Math.round(en/Math.max(total,1)*100)+'%';
+  document.getElementById('evBookBar').style.width=Math.round(book/Math.max(total,1)*100)+'%';
+  document.getElementById('evGymBar').style.width=Math.round(gym/Math.max(total,1)*100)+'%';
+}
+
+renderEvening();renderEvStats();
+
+// Init sync
+if(!localStorage.getItem('np_gas_url')){
+  showSyncBanner();
+} else {
+  _syncEnabled=true;
+  syncFromCloud();
+}
+
+const manifest={
+  name:'NovaPlay Sprint Planner',
+  short_name:'NovaPlay',
+  description:'Sprint & Evening Routine Tracker',
+  start_url:'.',
+  display:'standalone',
+  background_color:'#fafaf9',
+  theme_color:'#1D9E75',
+  orientation:'portrait',
+  icons:[
+    {src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%231D9E75'/%3E%3Ctext y='130' x='96' text-anchor='middle' font-size='110' font-family='sans-serif' fill='white'%3EN%3C/text%3E%3C/svg%3E",sizes:'192x192',type:'image/svg+xml'},
+    {src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%231D9E75'/%3E%3Ctext y='360' x='256' text-anchor='middle' font-size='300' font-family='sans-serif' fill='white'%3EN%3C/text%3E%3C/svg%3E",sizes:'512x512',type:'image/svg+xml'}
+  ]
+};
+const mBlob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+document.getElementById('manifestLink').href=URL.createObjectURL(mBlob);
+
+if('serviceWorker' in navigator){
+  const sw=`const C='np-v1';self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll([location.href])));self.skipWaiting();});self.addEventListener('activate',()=>self.clients.claim());self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{caches.open(C).then(c=>c.put(e.request,res.clone()));return res;}).catch(()=>caches.match(location.href))));});`;
+  navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
+}
+
+let _prompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();_prompt=e;
+  const b=document.createElement('button');
+  b.textContent='+ Cài lên màn hình';
+  b.style.cssText='position:fixed;bottom:20px;right:16px;background:#1D9E75;color:white;border:none;padding:11px 18px;border-radius:24px;font-size:13px;font-weight:500;cursor:pointer;z-index:9999;box-shadow:0 3px 12px rgba(29,158,117,0.4)';
+  b.onclick=async()=>{_prompt.prompt();await _prompt.userChoice;b.remove();_prompt=null;};
+  document.body.appendChild(b);
+});
+</script>
+</body>
+</html>
